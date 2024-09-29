@@ -1,9 +1,9 @@
 # AuspHex
 AuspHex is a lightweight hex code viewer and color contrast analyzer.
 
-> Auspex: n. A seer or oracle; augur.
-
 ![The AuspHex window](https://github.com/user-attachments/assets/6323483f-92df-4bd1-9333-80dfb27b3f25)
+
+> Auspex: n. A seer or oracle; augur.
 
 ## Features
 * **Color viewer**: Displays the color and hex code of the pixel under the mouse cursor
