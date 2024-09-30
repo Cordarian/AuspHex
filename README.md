@@ -19,3 +19,6 @@ AuspHex is a lightweight hex code viewer and color contrast analyzer.
 
 **Escape** to close the display window. Launch it again by right-clicking the tray icon and selecting AusHex (for the full display window) or Hex Vision (no window, just the mouse color viewer)
 
+## How does it work?
+
+This stand-alone tool is written in AutoHotkey v2. You can [find the original code here.](https://github.com/acordain/Impling.ahk2)
