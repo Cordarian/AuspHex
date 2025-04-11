@@ -21,4 +21,4 @@ AuspHex is a lightweight hex code viewer and color contrast analyzer.
 
 ## How does it work?
 
-This stand-alone tool is written in AutoHotkey v2. You can [find the original code here.](https://github.com/acordain/Impling.ahk2)
+This stand-alone tool is written in AutoHotkey v2. You can [find the original code here.](https://github.com/Cordarian/Impling.ahk2/blob/main/AuspHex.ahk2)
