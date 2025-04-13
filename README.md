@@ -3,7 +3,9 @@ AuspHex is a color contrast analyzer supporting WCAG AA and AAA standards.
 
 ![AuspHex window](https://github.com/user-attachments/assets/da89cbaa-d2e0-4e7a-adba-0012079a9a30)
 
-> Auspex: n. A seer or oracle; augur.
+> Auspex: noun; A seer or oracle; augur.
+
+> The best puns are the ones you need to explain. — Cordarian, 2025
 
 ## Features
 * **Color viewer**: Displays the color and hex code of the pixel under the mouse cursor
