@@ -1,0 +1,1194 @@
+; =========================================================
+;							DIRECTIVES
+; =========================================================
+#Requires Autohotkey v2.0+
+#SingleInstance Force ;Prevents multiple versions of script running
+#UseHook true ;Helps ensure modifier keys don't remain pressed after hotkey ends
+
+
+; TO-DOs ==================================================
+/*
+BUG: Changing window sizes sometimes toggles hexvision? Likely to do with how we're changing/saving hexvision settings
+BUG: Manually changing field values doesn't update the contrast results, just the visualizer
+
+*/
+; =========================================================
+;						GLOBAL VARIABLES
+; =========================================================
+Global A_Return := "`r`n"
+
+Global master_mouse_speed := getMouseSpeed()
+
+Global font_Sizes := [
+	12,
+	14,
+	18
+]
+
+Global defaultForeground := "000000"
+Global defaultBackground := "00AAFF"
+
+Global click_count := 0
+
+Global check_mark := "✔ "
+Global X_mark := "❌ "
+Global copy_icon := "🗐"
+
+
+; =========================================================
+;						TRAY ICON BINARY
+; =========================================================
+{
+	script_icon := Create_Image(
+		"AAABAAEAICAAAAEAIACoEAAAFgAAACgAAAAgAAAAQAAAAAEAIAAAAAAAABAAAMMOAADDDgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+tgAA/rYAAv62AB7+tgBL/rYAbf62AHv+tgB+/rYAd/62AGX+twBM/rYAL/62ABH9tgAB/bYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+tAAA/rgAAP61ACD+tgCF/rYA2v62APj/twD//7cA//+3AP//twD//7cA//+3APr/twDs/7cAzP62AJH+tgBF/rYACf62AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/rQHAP66AAD+tgFB/rYAyf+3AP3/twD//7cA//+3AP//twD//7cA//+3AP//twD//7cA//+3AP//twD//7cA//+3APT+tgCR/rYAEP62AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP6iJAD+tgAA/rYFLf63AdL/twD//7cA//+3AP//twD//7cA8/+3ANn/uQHB/7oBs/+4ALP/twDI/7cA5P+3AO3/twD3/7cB//62APL+tQBI/rYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/VwEA/rYBAP6zAhX+tgGw/rYB//62Afn+twHe/7cBsf+5BHn+w05g/b+ucP2l4438m/CG+bTsXPfUsDD/wxwo/7oKMf+4Bkv/twF4/rYAcv61ABj+tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////AP6wAAD+uhcH/rUCdP61Asb+tgKq/rcDaf63BCT/3kgH/LfTTPyLsMv8fr/0/Fjr/fpC9v7fd/j1taP80cHD/3Lv9P8M09r/AP///wAAAAAAAAAAAP///wD///8AAAAAAAAAAAAAAAAAAAAAAAAAAAD///8A////AP///wL///8C////A/7UbAn+uxgm/r0gHP7FOQn+4aIA+7bEAP3V3DX8jKvZ/DZy//w9jPz8PNv87iz0/J5M+PxMRPv/gIH89MnJ/GP///8C////Af///QD+wiQA/sxJJP3FNH0AAAAAAAAAAAAAAAAAAAAA////AP///wD///8D////BP///wT///8E////BP///wL///8C////BP///wL98u4P/Ly2qfx8hf/8Pmv8/EGC/Phaz/zJVvX8Wz/6/B4f/PxVWfz/tLj7sv///Qz///8A/dFWAP3WZhb+vx20/r4a4gAAAAAAAAAA////AP///wD///8B////A////wT///8E////BP///wT///8E////BP///wT///8E7gAAAPza1Df8m4fp/Fo7/fxdUvz8dIj89aPT/Leb9/xeb/z8Q2z8/FiN/P6hxvzX4O/9IcDQzQD877cF/sMqi/+6C/n+xS6BAAAAAP///wD///8A////Av///wT///8E////BP///wT///8E////BP///wT///8E////BP///wP6r6AA/NrURfydh/H8Yjb9/HRE/PuqiPz46eP8yub7/Gy4+/wyofz8KaH8/X/H/ObV6/00SQAAAP7JPVX/ugzz/r4Xxf3VYh3///8A////AP///wH///8E////Av///wH///8B////Av///wT///8E////BP///wT///8E////A/vMvAD96OUm/Muq1fywXf77tkP87M9t/LbyvvyL+e38XeP5/EDB+/w/sfz/js781eDz/yP/01kk/r4Xz/+3A/z+vxxa/6cAAP///wD///8A////Af7OVwf+vhwh/rsRNP67ETP/vyAe/tVtBv///wH///8D////BP///wT///8D////AP///wb86beT/NNd//TLLfy14HD8Wvan/Ff81vwx+PX8P+35/YHg+/q95P2C/+68EP+/HJb/uAP//rcC5v63Aiv+twIA/eyxAP3//wL+yT4l/rgHkf63Atn+twHs/7cB7f+3Atr/uASc/7oNQv/KRAr///8B////BP///wT///8B+MhHAP3xzzX845jP4d57/3Xvlv0m+5/8R/zG/Dn88f5N/Pn9nfr8p+v14x7/vhdz/7gE9f+3Af/+tgHU/rYAGf62AAD+zk4n/cQtf/67ENj/twL+/7cB//+3AP//twD//7cA//+3Af//twHw/7gDqf+6DEP+zEoJ////Af///wL///8A////Av3z1DXY882pivnE8Fr8tvx6/M74jfzy3pj+/47Y8cou/74Yfv+4A/P/twD//rYA//62AKf+tgAH/rYAAP3KRXb+wCOG/rgHsP63AtX+twHw/7cB/f+3Af//twD//7cA//+3AP//twH//7cB7/+3A6T/ug1C/8g/DPf//wD+7cIAzf/+AOD//w/C//FEsf/mZb/+6V3f8Mg7/cpBUP+8ErL/uAP5/7cA//+3Af/+tgDZ/rYAMP62AAD/tgAA/dp7BP7QZQP+xkAP/rwYJv65DEX+uAZw/7cCwP+3AfX/twH//7cB//+3AP//twD//7cA//+3AfD/twK5/7gEgv+4BVP/uQcy/7cCOv+1AEn/tgFj/7cDjP+5BsP/uAXy/7cB//+3Af//twH//rYA8P62AFf+sgAA/roAAAAAAAD///8A////AP///wH///8B/c1UAP3//wD/xTQR/7kLTP+3A67/twHz/7cB//+3Af//twD//7cA//+3AP//twD//7cA+v+3Ae//twHz/7cA+v+3AP7/twD//7cA//+3AP//twH//7cB//+3Afr+twB8/bcABP63AAAAAAAAAAAAAAAAAAAAAAAA////AP///wD///8B////Af///wH/qwAA/sIpCv+4B0n/twKx/7cB9P+3Af//twH//7cB//+3AP//twD//7cA//+3AP//twH//7cB//+3Af//twH//7cB//+3Af//twH4/7cDjv+5CAv/uAcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+vRAA/7cAAP+4Agr+tgBJ/rYAp/62AOX+tgD8/7cA//+3AP//twD//7cA//+3Af//twH//7cB//+3Afr/twHj/7cCr/+4Bln/uxEL/7oLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA+8UAAP62AAD+tgAG/rYAKP62AFj+tgB+/7cAnv62AMD+tgC7/rYArP62AJb+tgB2/7YBTv+3AyX+vBQH/6wAAP3ZZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP62AAD9tQAC/rYACv62AAj+twAD/q0AAP6wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/////////////////////////////gAf//wAB//4AAP/8AAD/+AAA//AAD/+AwAM/AAAGPACABDgAgAQwAIAAcACAAGAAQABAAEAAQABwAMAAAAHzAAAB/EAAA//wAAf//AAf///D/////////////////////////////////8="
+	)
+
+	TraySetIcon("HBITMAP:*" . script_icon)
+}
+
+
+; =========================================================
+;						GENERAL FUNCTIONS
+; =========================================================
+Tip(tiptext := "Tip", sec := 2)
+;Displays a tooltip for (default) 2 seconds
+{
+	ToolTip(tiptext), SetTimer(ToolTip, -1000 * sec)
+}
+
+RemoveToolTip()
+;Clears the current tooltip
+{
+	ToolTip()
+}
+
+Create_Image(B64, NewHandle := True) {
+	; Seems to work better with ICO files than PNG
+	; This function adapted from Image2Include v2 by iPhilip https://www.autohotkey.com/boards/viewtopic.php?style=1&t=119966
+	Static hBitmap := 0
+	If (NewHandle)
+		hBitmap := 0
+	If (hBitmap)
+		Return hBitmap
+
+	If !DllCall("Crypt32.dll\CryptStringToBinary", "Ptr", StrPtr(B64), "UInt", 0, "UInt", 0x01, "Ptr", 0, "UIntP", &DecLen :=
+	0, "Ptr", 0, "Ptr", 0)
+		Return False
+	Dec := Buffer(DecLen, 0)
+	If !DllCall("Crypt32.dll\CryptStringToBinary", "Ptr", StrPtr(B64), "UInt", 0, "UInt", 0x01, "Ptr", Dec, "UIntP", &
+	DecLen, "Ptr", 0, "Ptr", 0)
+		Return False
+	; Bitmap creation adopted from "How to convert Image data (JPEG/PNG/GIF) to hBITMAP?" by SKAN
+	; -> http://www.autohotkey.com/board/topic/21213-how-to-convert-image-data-jpegpnggif-to-hbitmap/?p=139257
+	hData := DllCall("Kernel32.dll\GlobalAlloc", "UInt", 2, "UPtr", DecLen, "UPtr")
+	pData := DllCall("Kernel32.dll\GlobalLock", "Ptr", hData, "UPtr")
+	DllCall("Kernel32.dll\RtlMoveMemory", "Ptr", pData, "Ptr", Dec, "UPtr", DecLen)
+	DllCall("Kernel32.dll\GlobalUnlock", "Ptr", hData)
+	DllCall("Ole32.dll\CreateStreamOnHGlobal", "Ptr", hData, "Int", True, "PtrP", pStream := ComValue(13, 0))
+	hGdip := DllCall("Kernel32.dll\LoadLibrary", "Str", "Gdiplus.dll", "UPtr")
+	SI := Buffer(8 + 2 * A_PtrSize, 0), NumPut("UInt", 1, SI, 0)
+	DllCall("Gdiplus.dll\GdiplusStartup", "PtrP", &pToken := 0, "Ptr", SI, "Ptr", 0)
+	DllCall("Gdiplus.dll\GdipCreateBitmapFromStream", "Ptr", pStream, "PtrP", &pBitmap := 0)
+	DllCall("Gdiplus.dll\GdipCreateHBITMAPFromBitmap", "Ptr", pBitmap, "PtrP", &hBitmap := 0, "UInt", 0)
+	DllCall("Gdiplus.dll\GdipDisposeImage", "Ptr", pBitmap)
+	DllCall("Gdiplus.dll\GdiplusShutdown", "Ptr", pToken)
+	DllCall("Kernel32.dll\FreeLibrary", "Ptr", hGdip)
+	Return hBitmap
+}
+
+
+; STREAM SAVE SETTINGS ====================================
+; This will fail if the file isn't in an NTFS folder, E.G., if it's in Box Drive, which is FAT-32, and create a settings text file using stream_fallback instead
+Global stream_fallback := "AuspHex-Settings-" A_Username ".ini"
+
+StreamRead(INI_section, INI_key, defaultTo := False) {
+	; Reads the key's value from the given section of the data stream
+	stream_value := IniRead(A_ScriptFullPath ":Stream:$DATA", INI_section, INI_key, defaultTo)
+	If stream_value = defaultTo {
+		Global stream_fallback
+		stream_value := IniRead(stream_fallback, INI_section, INI_key, defaultTo)
+	}
+	Return stream_value
+}
+
+StreamWrite(INI_section, INI_key, INI_value) {
+	; Writes the value to the key
+	; This will fail if the file isn't in an NTFS folder, E.G., if it's in Box Drive, which is FAT-32
+	Try {
+		IniWrite(INI_value, A_ScriptFullPath ":Stream:$DATA", INI_section, INI_key)
+	}
+	Catch {
+		Global stream_fallback
+		IniWrite(INI_value, stream_fallback, INI_section, INI_key)
+	}
+}
+
+
+; =========================================================
+;							TRAY MENU
+; =========================================================
+Tray := A_TrayMenu
+Tray.Add() ;Line break
+Tools := Menu()
+Tools.Add("AuspHex", AuspHex)
+Tools.Add("HexVision", HexVision)
+Tray.Add("Tools", Tools)
+
+
+; =========================================================
+;							AUSPHEX GUI
+; =========================================================
+AuspHex(A_ThisMenuItem := "", A_ThisMenuItemPos := "", A_ThisMenu := "")
+;Creates AuspHex window and runs HexVision
+{
+	Global
+	; GUI Window and Constants ============================
+	AuspHexWindow := Gui("-MaximizeBox +AlwaysOnTop +MinSize", "AuspHex - Color Viewer & Contrast Analyzer") ;
+	Build_Menubar()
+	AuspHexWindow.SetFont(Format("s{}", fontPoint), "Calibri")
+
+	AuspWinWidth := fontPoint * 23
+	MarginX := AuspHexWindow.MarginX := AuspHexWindow.MarginX / 2
+	MarginY := AuspHexWindow.MarginY := AuspHexWindow.MarginY / 2
+	GroupMarginX := MarginX * 2.75
+	GroupMarginY := MarginY * 5.5
+	LineHeight := fontPoint * 2.25
+	RGB_column_width := (AuspWinWidth - GroupMarginX * 4) / 3
+
+	; Foreground ==========================================
+
+	;Foreground groupbox
+	AuspHexWindow.SetFont(Format("s{} w700", fontPoint + 2)) ;Sets font size for heading
+	ForeGroupBox := AuspHexWindow.Add("GroupBox", Format("Section X{} Y{} W{} H{} -Theme", MarginX, MarginY / 2, AuspWinWidth - MarginX * 1.5, MarginY * 32), "Foreground") ;-Theme allows us to adjust font color
+	AuspHexWindow.SetFont(Format("s{} w400", fontPoint)) ;Resets font
+	;Foreground hotkey message
+	ForeText := AuspHexWindow.Add("Text", Format("X{} YP+{}", GroupMarginX, GroupMarginY), "Alt+Left-Click to change foreground." A_Return "Hold Alt key to pick more precisely.")
+
+
+	;Hex1 color patch
+	color1_patch := AuspHexWindow.Add("Text", Format("Section X{} Y+{} H{} W{} vcolor1_patch +0x1000 +0x0100", GroupMarginX, MarginY, LineHeight, LineHeight), "") ;0x0100 lets this accept a tooltip somehow?
+	color1_patch.OnEvent("Click", launch_canvas)
+	color1_patch.ToolTip := "Current foreground color`r`nClick for sampling canvas"
+
+	;Hex1 label
+	Hex1Label := AuspHexWindow.Add("Text", Format("X+{} YP+{}", MarginX, MarginY), "Hex Code:  #")
+
+	;Hex1 field
+	hex1 := AuspHexWindow.Add("Edit", Format("X+{} YS W{} vHex1 Limit8 Uppercase", 3, fontPoint * 5.5), defaultForeground) ;Display field for hex code
+
+
+	copyHex1 := AuspHexWindow.Add("Button", Format("Section X+{} YP W{} H{} vHex1Copy", MarginX, RGB_column_width * 2 / 3, LineHeight), "Copy")
+	copyHex1.ToolTip := "Copy #Hex"
+	copyHex1.OnEvent("Click", copy_color)
+
+	;RGB1 label
+	RGB1Label := AuspHexWindow.Add("Text", Format("Section X{} Y+{}", GroupMarginX, MarginY * 3), "RGB(")
+	;Red1 field
+	Red1 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vRed1 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+	RGB1comma1 := AuspHexWindow.Add("Text", "X+1 YS", ", ")
+
+	;Green1 field
+	Green1 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vGreen1 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+	RGB1comma2 := AuspHexWindow.Add("Text", "X+0 YS", ", ")
+
+	;Blue1 field
+	Blue1 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vBlue1 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+
+	RGB1LabelParen := AuspHexWindow.Add("Text", Format("X+1 YS", GroupMarginX, MarginY), ")")
+
+	copyRGB1 := AuspHexWindow.Add("Button", Format("Section X+{} YP W{} H{} vRGB1Copy", MarginX, RGB_column_width * 2 / 3, LineHeight), "Copy")
+	copyRGB1.ToolTip := "Copy RGB()"
+	copyRGB1.OnEvent("Click", copy_color)
+
+
+	; HexSwap =============================================
+	swapButton := AuspHexWindow.Add("Button", Format("X{} W{} Default", RGB_column_width + GroupMarginX, RGB_column_width + GroupMarginX * 2), "Swap Colors")
+	swapButton.ToolTip := "Swap foreground and background colors"
+
+
+	; Background ==========================================
+	;Background groupbox
+	AuspHexWindow.SetFont(Format("s{} w700", fontPoint + 2)) ;Sets font size for heading
+	BackGroupBox := AuspHexWindow.Add("GroupBox", Format("Section X{} YS+{} W{} H{} -Theme", MarginX, MarginY * 17, AuspWinWidth - MarginX * 1.5, MarginY * 32), "Background") ;-Theme allows us to adjust font color
+	;Background hotkey message
+	AuspHexWindow.SetFont(Format("s{} w400", fontPoint)) ;Resets font
+	BackText := AuspHexWindow.Add("Text", Format("X{} YP+{}", GroupMarginX, GroupMarginY), "Alt+Right-Click to change background." A_Return "Hold Alt key to pick more precisely.")
+
+	;Hex2 color patch
+	color2_patch := AuspHexWindow.Add("Text", Format("Section X{} Y+{} H{} W{} vcolor2_patch +0x1000 +0x0100", GroupMarginX, MarginY, LineHeight, LineHeight), "") ;0x0100 allows this to accept a tooltip
+	color2_patch.OnEvent("Click", launch_canvas)
+	color2_patch.ToolTip := "Current background color`r`nClick for sampling canvas"
+	;Hex2 label
+	Hex2Label := AuspHexWindow.Add("Text", Format("X+{} YP+{}", MarginX, MarginY), "Hex Code:  #")
+	;Hex2 field
+	hex2 := AuspHexWindow.Add("Edit", Format("X+{} YS W{} vHex2 Limit8 Uppercase", 3, fontPoint * 5.5), defaultBackground) ;Display field for hex code
+	hex2.GetPos(, &hex2_Y) ;Saving variables for later
+
+	copyHex2 := AuspHexWindow.Add("Button", Format("Section X+{} YP W{} H{} vHex2Copy", MarginX, RGB_column_width * 2 / 3, LineHeight), "Copy")
+	copyHex2.ToolTip := "Copy #Hex"
+	copyHex2.OnEvent("Click", copy_color)
+
+
+	;RGB2 label
+	RGB2Label := AuspHexWindow.Add("Text", Format("Section X{} Y+{}", GroupMarginX, MarginY * 3), "RGB(")
+	;Red2 field
+	Red2 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vRed2 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+	RGB2comma1 := AuspHexWindow.Add("Text", "X+1 YS", ", ")
+
+	;Green2 field
+	Green2 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vGreen2 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+	RGB2comma2 := AuspHexWindow.Add("Text", "X+0 YS", ", ")
+
+	;Blue2 field
+	Blue2 := AuspHexWindow.Add("Edit", Format("X+1 YP-{} W{} vBlue2 Limit3 Number", fontPoint * 0.25, fontPoint * 3.5), "") ;Display field for hex code
+
+
+	RGB2LabelParen := AuspHexWindow.Add("Text", Format("X+1 YS", GroupMarginX, MarginY), ")")
+
+	copyRGB2 := AuspHexWindow.Add("Button", Format("Section X+{} YP W{} H{} vRGB2Copy", MarginX, RGB_column_width * 2 / 3, LineHeight), "Copy")
+	copyRGB2.ToolTip := "Copy RGB()"
+	copyRGB2.OnEvent("Click", copy_color)
+
+	; Contrast Ratio ======================================
+	AuspHexWindow.SetFont(Format("S{} W700", fontPoint + 4))
+	;Displays results of the color contrast check
+	ContrastRatio := AuspHexWindow.Add("Edit", Format("X{} Y+{} W{} R1 Center +ReadOnly +0x200 +0x800000", MarginX, MarginY * 4, AuspWinWidth - MarginX * 2), "Ratio") ;0x200 centers text vertically; 0x800000 adds a frame around the Edit field
+	AuspHexWindow.SetFont(Format("S{} W400", fontPoint))
+	ContrastRatio.ToolTip := "Current contrast ratio"
+
+	; WCAG Tabs ===========================================
+	StatsHeight := (2 * fontPoint) * 5.5
+	StatsLineHeight := (2 * fontPoint) * 4
+	AuspHexWindow.SetFont("w700") ;Sets font size for header
+	WCAG_Tabs := AuspHexWindow.Add("Tab3", Format("Section X{} Y+{} W{} -Background", MarginX, MarginY * 2, AuspWinWidth - MarginX * 2, StatsHeight), [
+		"WCAG AAA",
+		"WCAG AA"
+	])
+	AuspHexWindow.SetFont("w400") ;Resets font
+
+
+	; Contrast results ------------------------------------
+	AAA_regular_ratio := '<a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-enhanced.html" >Regular text</a> (7:1 or greater)'
+	AA_regular_ratio := '<a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html" >Regular text</a> (4.5:1 or greater)'
+
+	AAA_large_ratio := '<a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-enhanced.html#dfn-large-scale" >Large text</a> (4.5:1 or greater)'
+	AA_large_ratio := '<a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html#dfn-large-scale" >Large text</a> (3:1 or greater)'
+	large_text_definition := "   (Large = 18pt/24px font," A_Return "   or 14pt/19px bold)"
+
+	icon_ratio := '<a href="https://www.w3.org/WAI/WCAG21/Understanding/non-text-contrast.html" >Non-text objects</a> (3:1 or greater)'
+
+	; WCAG AAA --------------------------------------------
+	AAA_regular_result := AuspHexWindow.Add("Text", Format("XS+{} YS+{} 0x0100", MarginX, MarginY * 7), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AAA_regular_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), AAA_regular_ratio) ;Displays contrast type, link, and minimum ratio
+	AAA_regular_message.ToolTip := "WCAG 2.1 SC 1.4.6 Text Contrast (Enhanced) (Level AAA)"
+
+	AAA_large_result := AuspHexWindow.Add("Text", Format("XS+{} Y+{} 0x0100", MarginX, MarginY), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AAA_large_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), AAA_large_ratio A_Return large_text_definition) ;Displays contrast type, link, and minimum ratio
+	AAA_large_message.ToolTip := "WCAG 2.1 SC 1.4.6 Large Text Contrast (Enhanced) (Level AAA)"
+
+	AAA_icon_result := AuspHexWindow.Add("Text", Format("XS+{} Y+{} 0x0100", MarginX, MarginY), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AAA_icon_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), icon_ratio) ;Displays contrast type, link, and minimum ratio
+	AAA_icon_message.ToolTip := "WCAG 2.1 SC 1.4.11 Non-text Contrast (Level AA)"
+
+	WCAG_Tabs.UseTab(2)
+	; WCAG AA --------------------------------------------
+	AA_regular_result := AuspHexWindow.Add("Text", Format("XS+{} YS+{} 0x0100", MarginX, MarginY * 7), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AA_regular_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), AA_regular_ratio) ;Displays contrast type, link, and minimum ratio
+	AA_regular_message.ToolTip := "WCAG 2.1 SC 1.4.6 Text Contrast (Minimum) (Level AA)"
+
+	AA_large_result := AuspHexWindow.Add("Text", Format("XS+{} Y+{} 0x0100", MarginX, MarginY), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AA_large_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), AA_large_ratio A_Return large_text_definition) ;Displays contrast type, link, and minimum ratio
+	AA_large_message.ToolTip := "WCAG 2.1 SC 1.4.6 Large Text Contrast (Minimum) (Level AA)"
+
+	AA_icon_result := AuspHexWindow.Add("Text", Format("XS+{} Y+{} 0x0100", MarginX, MarginY), check_mark) ;Displays results of the color contrast check. Must start with a default value, or the added icon gets cut off
+	AA_icon_message := AuspHexWindow.Add("Link", Format("X+{} YP", MarginX), icon_ratio) ;Displays contrast type, link, and minimum ratio
+	AA_icon_message.ToolTip := "WCAG 2.1 SC 1.4.11 Non-text Contrast (Level AA)"
+
+	; Selects previously loaded tab
+	WCAG_Tabs.UseTab() ;Prevents subsequent controls being added to the Tab
+	tab2select := StreamRead("AuspHex", "WCAG_Level", 1)
+	WCAG_Tabs.Choose(Integer(tab2select)) ;Ctrl.Choose doesn't handle string ints
+
+	WCAG_Tabs.UseTab()
+
+	; Contrast Visualizer =================================
+	AuspHexWindow.SetFont(Format("s{} w700", Max(14, fontPoint))) ;Change font size to match Large Text so both visualizer Edits are the same height
+
+	visaulizerBox := AuspHexWindow.Add("GroupBox", Format("Section X{} Y+{} W{} H{}", MarginX, lineHeight / 2, AuspWinWidth - MarginX * 2, 16 * MarginY), "Contrast visualizer")
+	visaulizerBox.GetPos(&visaulizerBox_X, &visaulizerBox_Y, &visaulizerBox_width, &visaulizerBox_height) ;Saving variables for later
+
+	contrastView_width := (AuspWinWidth) * (7.5 / 22)
+	contrastView_padding := (AuspWinWidth) * (1 / 22)
+	largeLineHeight := contrastView_width / 2.5
+
+	contrastViewRegular := AuspHexWindow.Add("Text", Format("X{} YS+{} W{} H{} Background{} c{} +0x200 Center +0x0100", contrastView_padding, MarginY * 6, contrastView_width, largeLineHeight, defaultBackground, defaultForeground), "Regular Text") ;0x200 centers text vertically; 0x0100 lets this accept a tooltip somehow?
+	contrastViewRegular.SetFont("s12 w400") ;Sets font to "normal" size
+	contrastViewRegular.ToolTip := "`"Regular`" text is smaller than large text, but should generally `r`nbe no smaller than 12 points/16 pixels for usability"
+
+	contrastViewLarge := AuspHexWindow.Add("Text", Format("X+{} YP W{} H{} Background{} c{} +0x200 Center +0x0100", contrastView_padding, contrastView_width, largeLineHeight, defaultBackground, defaultForeground), "Large Text") ;0x200 centers text vertically; 0x0100 lets this accept a tooltip somehow?
+	contrastViewLarge.ToolTip := "Text is considered `"large`" if it is 18 points/24 pixels or larger, `r`nor 14 points/19 pixels and bold (weight ≥700) or larger"
+
+	AuspHexWindow.SetFont(Format("s{} w400", fontPoint + 8)) ;Resets font to GUI defaults
+	contrastViewIcon := AuspHexWindow.Add("Text", Format("X+{} YP W{} H{} Background{} c{} +0x0100 +0x200 Center", contrastView_padding, largeLineHeight, largeLineHeight, defaultBackground, defaultForeground), "📊") ;0x200 centers text vertically; 0x0100 lets this accept a tooltip somehow?
+	contrastViewIcon.ToolTip := "Non-text objects, including user interface components and their states, `r`nand graphical objects that convey essential information"
+
+	AuspHexWindow.SetFont(Format("s{} w400", fontPoint)) ;Resets font to GUI defaults
+	; Spectrum footer =====================================
+	Static spectrum := [
+		"Black",
+		"Maroon",
+		"Red",
+		"FF8000", ; Orange
+		"Yellow",
+		"Green",
+		"Blue",
+		"Purple",
+		"805000", ; Brown
+		"Gray",
+		"White",
+		"Aqua",
+		"Lime",
+		"Fuchsia",
+	]
+
+	AuspHexWindow.MarginX := 0
+	spectrumTile := Round(AuspWinWidth + 16) / 14 ;16 appears to always be the difference between the client width and window width?
+	AuspHexWindow.MarginY := 0
+
+	Loop spectrum.Length {
+		If A_Index = 1 {
+			this_tile := AuspHexWindow.Add("Text", Format("Section X0 Y+{} W{} H{} Background{}", MarginY * 4, spectrumTile, spectrumTile, spectrum[1]))
+		}
+		Else {
+			this_tile := AuspHexWindow.Add("Text", Format("Section X+0 YS W{} H{} Background{}", spectrumTile, spectrumTile, spectrum[A_Index]))
+		}
+		this_tile.OnEvent("Click", launch_canvas)
+		this_tile.ToolTip := "Click for sampling canvas"
+	}
+
+	; Button Events =======================================
+	control_list := [
+		Hex1,
+		Hex2,
+		Red1,
+		Green1,
+		Blue1,
+		Red2,
+		Green2,
+		Blue2
+	]
+	For control in control_list {
+		control.OnEvent("Change", UpdateAllControls) ;Runs the checker in case the user types in a hex value
+	}
+	swapButton.OnEvent("Click", swapHexes)
+	AuspHexWindow.OnEvent("Close", AuspHex_Destroy)
+
+
+	; Window launch =======================================
+	;Initialize colors
+	update_colors_from(1)
+	update_colors_from(2)
+
+	;Reloads last window position
+	xloc := StreamRead("AuspHex", "AuspHex_x", 0)
+	yloc := StreamRead("AuspHex", "AuspHex_y", 0)
+
+	AuspHexWindow.Show(Format("X{} Y{} W{} NA", xloc, yloc, AuspWinWidth))
+	OnMessage(0x0200, On_WM_MOUSEMOVE)
+
+	On_WM_MOUSEMOVE(wParam, lParam, msg, Hwnd) {
+		Static PrevHwnd := 0
+		If (Hwnd != PrevHwnd) {
+			Text := "", ToolTip() ; Turn off any previous tooltip.
+			CurrControl := GuiCtrlFromHwnd(Hwnd)
+			If CurrControl {
+				If !CurrControl.HasProp("ToolTip")
+					Return ; No tooltip for this control.
+				Text := CurrControl.ToolTip
+				SetTimer(() => ToolTip(Text), -1000)
+				SetTimer(() => ToolTip(), -6000) ; Remove the tooltip.
+			}
+			PrevHwnd := Hwnd
+		}
+	}
+
+	If showHexVision {
+		HexVision()
+	}
+}
+
+Build_Menubar() {
+	; Zoom level
+	WindowSizeMenu := Menu()
+	WindowSizeMenu.Add("&Small`tCtrl+S", change_SizeSetting)
+	WindowSizeMenu.Add("&Medium`tCtrl+M", change_SizeSetting)
+	WindowSizeMenu.Add("&Large`tCtrl+L", change_SizeSetting)
+
+	Global fontPoint := StreamRead("AuspHex", "fontPoint", 12) ;Loads font size from Settings, defaulting to 12pt
+
+	; Checks the relevant menu item in the most laborious way possible
+	Static WindowSizes := [
+		"&Small`tCtrl+S",
+		"&Medium`tCtrl+M",
+		"&Large`tCtrl+L"
+	]
+
+	Loop font_Sizes.Length {
+		If font_Sizes[A_Index] = fontPoint {
+			toggle_menu_checkmark(WindowSizeMenu, WindowSizes[A_Index], True) ;Un/checks item
+		}
+	}
+
+	; Preferences
+	PreferenceMenu := Menu()
+	PreferenceMenu.Add("&Pin window to top`tCtrl+P", change_Setting)
+	PreferenceMenu.Add("Show &HexVision`tCtrl+H", change_Setting)
+	PreferenceMenu.Add("Sl&ow mouse with Alt key`tCtrl+O", change_Setting)
+
+
+	;Checks relevant menu items and initializes global variables
+	Global pinnedWindow := StreamRead("AuspHex", "pinnedWindow", True)
+	toggle_menu_checkmark(PreferenceMenu, "&Pin window to top`tCtrl+P", pinnedWindow) ;Un/checks item
+
+
+	Global showHexVision := StreamRead("AuspHex", "showHexVision", True)
+	toggle_menu_checkmark(PreferenceMenu, "Show &HexVision`tCtrl+H", showHexVision) ;Un/checks item
+
+
+	Global slowOnAlt := StreamRead("AuspHex", "slowOnAlt", True)
+	toggle_menu_checkmark(PreferenceMenu, "Sl&ow mouse with Alt key`tCtrl+O", slowOnAlt) ;Un/checks item
+
+	; Display MenuBar
+	AuspHex_MenuBar := MenuBar()
+	AuspHex_MenuBar.Add("&Preferences", PreferenceMenu)
+	AuspHex_MenuBar.Add("&Window size", WindowSizeMenu)
+
+	Global AuspHexWindow
+	AuspHexWindow.MenuBar := AuspHex_MenuBar
+}
+
+toggle_menu_checkmark(this_menu, this_item, do_toggle) {
+	; Checks or unchecks this_item in this_menu, depending on whether do_toggle is True or False
+	If do_toggle {
+		this_menu.Check(this_item)
+	}
+	Else this_menu.Uncheck(this_item)
+}
+
+
+change_SizeSetting(this_MenuItem, this_ItemPos, this_Menu) {
+	; Uncheck existing settings
+	Global ;
+	this_Menu.UnCheck("&Small`tCtrl+S")
+	this_Menu.UnCheck("&Medium`tCtrl+M")
+	this_Menu.UnCheck("&Large`tCtrl+L")
+
+	; Maps item menu position to font point array
+	Global font_Sizes
+	Global fontPoint := font_Sizes[this_ItemPos] ;Updates script variable
+
+	;Saves to Settings
+	new_setting := fontPoint
+	setting_name := "fontPoint"
+	StreamWrite("AuspHex", setting_name, new_setting)
+
+	;Saves, closes, and reopens GUI
+	save_settings_for_close()
+	Try {
+		ColorSwatch.Destroy()
+	}
+	AuspHexWindow.Destroy()
+	AuspHex()
+}
+
+
+change_Setting(this_MenuItem, this_ItemPos, this_Menu) {
+	Switch this_MenuItem {
+		Case "&Pin window to top`tCtrl+P":
+		{
+			Global pinnedWindow := !pinnedWindow ;Updates script variable
+			new_setting := pinnedWindow ;Load new_setting to write to Settings
+			setting_name := "pinnedWindow"
+
+			Global AuspHexWindow
+			If new_setting {
+				AuspHexWindow.Opt("+AlwaysOnTop")
+				Tip("Pinned window")
+			}
+			Else {
+				AuspHexWindow.Opt("-AlwaysOnTop")
+				Tip("Unpinned window")
+			}
+		}
+		Case "Show &HexVision`tCtrl+H":
+		{
+			Global showHexVision := !showHexVision ;Updates script variable
+			new_setting := showHexVision ;Load new_setting to write to Settings
+			setting_name := "showHexVision"
+			this_Menu.ToggleCheck(this_MenuItem) ;Calling HexVision() seems to skip this line at the end of the function
+			If new_setting = True {
+				Tip("HexVision on")
+			}
+			Else Tip("HexVision off")
+			HexVision()
+		}
+		Case "Sl&ow mouse with Alt key`tCtrl+O":
+		{
+			Global slowOnAlt := !slowOnAlt ;Updates script variable
+			new_setting := slowOnAlt ;Load new_setting to write to Settings
+			If new_setting = True {
+				Tip("Slow mouse with Alt key on")
+			}
+			Else Tip("Slow mouse with Alt key off")
+			setting_name := "slowOnAlt"
+		}
+		Default:
+		{
+			Tip("Oops")
+			Return
+		}
+	}
+	; Write setting to file
+	StreamWrite("AuspHex", setting_name, new_setting)
+	this_Menu.ToggleCheck(this_MenuItem) ;Checks relevant menu item
+}
+
+
+HexVision(*)
+;Displays the color and hex code of the pixel currently under the mouse cursor
+{
+	Global ;
+	While showHexVision {
+	CoordMode("Mouse", "Screen") ;Comment to prevent line loss on format
+	CoordMode("Pixel", "Screen") ;Comment to prevent line loss on format
+	ColorSwatch := Gui() ;Comment to prevent line loss on format
+	ColorSwatch.Opt("+AlwaysOnTop -Caption +ToolWindow") ;-Caption removes border and title bar; +ToolWindow hides the taskbar button
+	ColorSwatch.SetFont("w700") ;Bolds text for visibility
+	HexDisplay := ColorSwatch.add("Text", "center", "0000000")
+	ListLines False
+	While showHexVision {
+		ListLines False
+		MouseGetPos(&MouseX, &MouseY) ;Gets mouse location
+		Local color0x := PixelGetColor(MouseX, MouseY) ;Gets pixel color at mouse location
+		color := SubStr(color0x, 3) ;Removes "0x" from the start of the hex code, EG, "0xFFFFFF"
+
+		buildSwatch(color)
+	}
+}
+ListLines(True)
+ColorSwatch.Destroy()
+}
+
+
+buildSwatch(hex)
+;Updates ColorSwatch with current color and hex code
+{
+	Global ;
+	contrast_font := contrastingFont(hex) ;Determines whether to use white or black text based on ColorSwatch's current background color
+	ListLines False
+	Try { ;Prevents an error window if the GUI was destroyed
+		ColorSwatch.BackColor := color ;Changes the GUI background color to the color of the pixel under the mouse cursor
+		HexDisplay.opt("c" . contrast_font) ;Sets font color
+		HexDisplay.Text := color ;Displays the hex code
+		ColorSwatch.Show("x" . MouseX + 10 . " y" . MouseY - 30 . " NA Autosize") ;Shows the GUI near the mouse cursor
+	}
+}
+
+contrastingFont(hexCode)
+;Returns either white or black, based on which font color will be more visible against the hexCode background
+{
+	decArray := hex2Dec(hexCode) ;Comment to prevent line loss on format
+	luminance := (0.299 * decArray[1]) + (0.587 * decArray[2]) + (0.114 * decArray[3])
+	;Returns white for dark colors, black for light colors
+	If (luminance < 128) {
+		Return "FFFFFF" ;White
+	}
+	Else Return "000000" ;Black
+}
+
+recolor_visualizer(hexCode, this_hex) ;Loads the hex code into hex1 (for single button press) or hex2 (double/multi press) and changes the respective color in the contrast visualizers
+{
+	Global Hex1
+	If this_hex = Hex1 {
+		contrastViewRegular.Opt("c" . hexCode) ;Changes visualizer font color to display selected color
+		contrastViewLarge.Opt("c" . hexCode) ;Changes visualizer font color to display selected color
+		contrastViewIcon.Opt("c" . hexCode) ;Changes visualizer font color to display selected color
+		color1_patch.Opt("Redraw Background" . hexCode) ;Changes color patch by hex field
+	}
+	Else {
+		contrastViewRegular.Opt("Background" . hexCode) ;Changes visualizer background to display selected color
+		contrastViewLarge.Opt("Background" . hexCode) ;Changes visualizer background to display selected color
+		contrastViewIcon.Opt("Background" . hexCode) ;Changes visualizer background to display selected color
+		color2_patch.Opt("Redraw Background" . hexCode) ;Changes color patch by hex field
+
+	}
+	contrastViewRegular.Value := contrastViewRegular.Value ;Resets the text to apply the new Opts
+	contrastViewLarge.Value := contrastViewLarge.Value ;Resets the text to apply the new Opts
+	contrastViewIcon.Value := contrastViewIcon.Value ;Resets the text to apply the new Opts
+
+}
+
+
+UpdateAllControls(master_value := A_ThisFunc, *) {
+	Global
+	If type(master_value) = "Gui.Edit" {
+		master_value := master_value.Name
+	}
+	color_fields := [
+		[
+			hex1,
+			red1,
+			green1,
+			blue1
+		],
+		[
+			hex2,
+			red2,
+			green2,
+			blue2
+		]
+	]
+
+	If InStr(master_value, "hex") {
+		Loop 2 {
+			this_hex := color_fields[A_Index][1]
+			this_red := color_fields[A_Index][2]
+			this_green := color_fields[A_Index][3]
+			this_blue := color_fields[A_Index][4]
+			this_color := this_hex.Value
+
+			this_color := RegExReplace(this_color, "[^A-Fa-f0-9]", "") ;Remove characters that aren't viable for a hex code
+
+			If this_color != this_hex.Value {
+				this_hex.Value := this_color
+			}
+
+			rgb_array := hex2Dec(this_color)
+			this_Red.Value := rgb_array[1]
+			this_Green.Value := rgb_array[2]
+			this_Blue.Value := rgb_array[3]
+
+			;Updates the contrast visualizer
+			recolor_visualizer(this_color, this_Hex)
+		}
+
+	}
+	Else {
+		Loop 2 {
+			this_hex := color_fields[A_Index][1]
+			this_red := color_fields[A_Index][2]
+			this_green := color_fields[A_Index][3]
+			this_blue := color_fields[A_Index][4]
+			this_color := this_hex.Value
+
+			For RGB in [
+				this_red,
+				this_green,
+				this_blue
+			] {
+				If RGB.Value = "" {
+					Return
+				}
+				If RGB.Value > 255 {
+					RGB.Value := 255
+				}
+			}
+			this_color := RGB2Hex(this_red.Value, this_green.Value, this_blue.Value)
+			this_hex.Value := this_color
+			;Updates the contrast visualizer
+			recolor_visualizer(this_color, this_hex)
+		}
+	}
+}
+
+
+load_this_hex_into(hex_value, which_color) {
+	hex_value := StrReplace(hex_value, "0x") ;Removes any leading "0x" from hex, EG, 0xFFFFFF
+	If (which_color = 1) {
+		Hex1.Value := hex_value ;Loads hex into the AuspHex window's Edit control
+	}
+	Else {
+		Hex2.Value := hex_value ;Loads hex into the AuspHex window's Edit control
+	}
+
+	update_colors_from(which_color)
+	Global click_count := 0 ;Resets count
+}
+
+
+update_colors_from(which_color) ;Updates RGB, visualizer, and contrast ratios from which_color's hex box
+{
+	If (which_color = 1) ;hex1 is master color
+	{
+		Global hex1
+		master_color := hex1.Value
+		RBG_color := hex2Dec(master_color)
+		Red1.Value := RBG_color[1]
+		Green1.Value := RBG_color[2]
+		Blue1.Value := RBG_color[3]
+	}
+	Else ;hex2 is master color
+	{
+		Global hex2
+		master_color := hex2.Value
+		RBG_color := hex2Dec(master_color)
+		Red2.Value := RBG_color[1]
+		Green2.Value := RBG_color[2]
+		Blue2.Value := RBG_color[3]
+	}
+	UpdateAllControls("hex")
+	ContrastCheck()
+}
+
+
+ContrastCheck(*)
+;Converts hex1 and hex2 into RGB values, calculates their luminance, and sends their contrast ratio to evaluateContrast()
+{
+	ListLines(True) ;Comment to prevent line loss on format
+	Global hex1
+	Global hex2
+	color1 := hex1.Value
+	color2 := hex2.Value
+	If (is_hexcode(color1) && is_hexcode(color2)) ;
+	{
+		Try {
+			recolor_visualizer(color1, hex1) ;Updates GUI with current hex values
+			recolor_visualizer(color2, hex2) ;Updates GUI with current hex values
+		}
+
+		deces1 := hex2Dec(color1) ;Converts hex code to RGB array
+		lum1 := calculateLuminance(deces1) ;Calculates the color's luminance
+
+		deces2 := hex2Dec(color2) ;Converts hex code to RGB array
+		lum2 := calculateLuminance(deces2) ;Calculates the color's luminance
+
+		;Converts luminance to color contrast
+		If (lum2 > lum1) {
+			contrast := (lum2 + 0.05) / (lum1 + 0.05)
+		}
+		Else {
+			contrast := (lum1 + 0.05) / (lum2 + 0.05)
+		}
+		;Evaluates color contrast
+		evaluateContrast(contrast)
+	}
+}
+
+is_hexcode(x) {
+	Return RegExMatch(x, "^([A-Fa-f0-9]{6})$")
+}
+
+
+hex2Dec(hexCode)
+;Separates a six digit hex code into R, G, B decimal values, EG, 007DFF > 0, 125, 255
+{
+	If is_hexcode(hexCode) {
+		red := SubStr(hexCode, 1, 2)
+		green := SubStr(hexCode, 3, 2)
+		blue := SubStr(hexCode, 5, 2)
+		colorArray := [
+			red,
+			green,
+			blue
+		]
+
+		For index, value in colorArray
+			;Converts hex values to decimal
+		{
+			firstDigit := SubStr(value, 1, 1)
+			secondDigit := SubStr(value, 2, 1)
+			Static hex2dec_dict := Map("A", "10", "B", "11", "C", "12", "D", "13", "E", "14", "F", "15")
+
+			If hex2dec_dict.Has(firstDigit) {
+				firstDigit := hex2dec_dict[firstDigit]
+			}
+			If hex2dec_dict.Has(secondDigit) {
+				secondDigit := hex2dec_dict[secondDigit]
+			}
+			decValue := (firstDigit * 16) + secondDigit
+			colorArray[index] := decValue
+		}
+		Return colorArray
+	}
+	Else Exit
+}
+
+
+RGB2Hex(Red, Green, Blue)
+;Compiles R, G, B decimal values into hexidecimal, EG, 0, 125, 255 > 007DFF
+{
+	Try {
+	Global hexCode
+	hexCode := Format("{1:02X}{2:02X}{3:02X}", Red, Green, Blue)
+
+	Global this_RGB
+	this_RGB := [
+		Red,
+		Green,
+		Blue
+	]
+
+	Return hexCode
+}
+Catch { ;Prevents an error if the user enters text
+	Tip("Invalid RGB value")
+	Exit
+}
+}
+
+
+calculateLuminance(decArray)
+;Returns the luminance (brightness) of a color
+{
+	Loop 3 {
+	component := decArray[A_Index] / 255
+	If (component <= 0.039280000000000002) {
+		this_color := component / 12.92
+	}
+	Else {
+		this_color := ((component + 0.055) / 1.055) ** 2.4
+	}
+	decArray[A_Index] := this_color
+}
+lum := (0.2126 * decArray[1]) + (0.7152 * decArray[2]) + (0.0722 * decArray[3])
+Return lum
+}
+
+evaluateContrast(ratio)
+;Evaluates the color contrast according to WCAG 2.2 AAA standards and displays the results in the AuspHex window
+{
+	ratio := Round(ratio, 1)
+	If (ratio = 0.0) {
+		Return
+	}
+	If (Mod(ratio, 1) = 0) {
+		ratio := Round(ratio) ;Round to no decimal places
+	}
+
+	; Updates Contrast Ratio in GUI
+	Global ContrastRatio
+	ContrastRatio.Value := "Contrast ratio = " ratio ":1"
+
+	; Loads WCAG standards results
+	If (ratio >= 7) {
+
+		AAA_regular_result.value := check_mark
+		AAA_regular_result.ToolTip := "Passed contrast check"
+		AAA_large_result.value := check_mark
+		AAA_large_result.ToolTip := "Passed contrast check"
+		AAA_icon_result.value := check_mark
+		AAA_icon_result.ToolTip := "Passed contrast check"
+
+		AA_regular_result.value := check_mark
+		AA_regular_result.ToolTip := "Passed contrast check"
+		AA_large_result.value := check_mark
+		AA_large_result.ToolTip := "Passed contrast check"
+		AA_icon_result.value := check_mark
+		AA_icon_result.ToolTip := "Passed contrast check"
+	}
+	Else If (ratio >= 4.5) {
+		AAA_regular_result.value := X_mark
+		AAA_regular_result.ToolTip := "Failed contrast check"
+		AAA_large_result.value := check_mark
+		AAA_large_result.ToolTip := "Passed contrast check"
+		AAA_icon_result.value := check_mark
+		AAA_icon_result.ToolTip := "Passed contrast check"
+
+		AA_regular_result.value := check_mark
+		AA_regular_result.ToolTip := "Passed contrast check"
+		AA_large_result.value := check_mark
+		AA_large_result.ToolTip := "Passed contrast check"
+		AA_icon_result.value := check_mark
+		AA_icon_result.ToolTip := "Passed contrast check"
+	}
+	Else If (ratio >= 3) {
+		AAA_regular_result.value := X_mark
+		AAA_regular_result.ToolTip := "Failed contrast check"
+		AAA_large_result.value := X_mark
+		AAA_large_result.ToolTip := "Failed contrast check"
+		AAA_icon_result.value := check_mark
+		AAA_icon_result.ToolTip := "Passed contrast check"
+
+		AA_regular_result.value := X_mark
+		AA_regular_result.ToolTip := "Failed contrast check"
+		AA_large_result.value := check_mark
+		AA_large_result.ToolTip := "Passed contrast check"
+		AA_icon_result.value := check_mark
+		AA_icon_result.ToolTip := "Passed contrast check"
+	}
+	Else {
+		AAA_regular_result.value := X_mark
+		AAA_regular_result.ToolTip := "Failed contrast check"
+		AAA_large_result.value := X_mark
+		AAA_large_result.ToolTip := "Failed contrast check"
+		AAA_icon_result.value := X_mark
+		AAA_icon_result.ToolTip := "Failed contrast check"
+
+		AA_regular_result.value := X_mark
+		AA_regular_result.ToolTip := "Failed contrast check"
+		AA_large_result.value := X_mark
+		AA_large_result.ToolTip := "Failed contrast check"
+		AA_icon_result.value := X_mark
+		AA_icon_result.ToolTip := "Failed contrast check"
+	}
+}
+
+
+swapHexes(*) {
+	;Swaps the values of hex1 and hex2
+	colorEdits := [
+		[
+			hex1,
+			hex2
+		],
+		[
+			Red1,
+			Red2
+		],
+		[
+			Green1,
+			Green2
+		],
+		[
+			Blue1,
+			Blue2
+		]
+	]
+
+	For color in colorEdits {
+		hexHolder := color[1].Value
+		color[1].Value := color[2].Value
+		color[2].Value := hexholder
+	}
+	ContrastCheck()
+}
+
+;Credit to mikeyww on AHK Forums:
+getMouseSpeed() { ; Get mouse speed
+	; https://autohotkey.com/board/topic/8432-script-for-changing-mouse-pointer-speed/
+	speed := 0
+	DllCall("SystemParametersInfo", "UInt", 0x70, "UInt", 0, "UIntP", &speed, "UInt", 0)
+	Return speed
+}
+
+
+;Credit to mikeyww on AHK Forums:
+setMouseSpeed(speed) { ; Set mouse speed
+	; https://autohotkey.com/board/topic/8432-script-for-changing-mouse-pointer-speed/
+	; 0x71 (SPI_SETMOUSESPEED), third parameter is the speed (range is 1-20, 10 is default)
+	DllCall("SystemParametersInfo", "UInt", 0x71, "UInt", 0, "UInt", speed, "UInt", 0)
+}
+
+
+save_settings_for_close() {
+	; Saves GUI window location for next load
+	AuspHexWindow.GetPos(&ausp_x, &ausp_y) ;
+	StreamWrite("AuspHex", "AuspHex_x", ausp_x)
+	StreamWrite("AuspHex", "AuspHex_y", ausp_y)
+	StreamWrite("AuspHex", "WCAG_Level", WCAG_Tabs.Value)
+
+	setMouseSpeed(master_mouse_speed)
+}
+
+
+AuspHex_Destroy(thisGui)
+;Destroys AuspHex and HexVision GUIs
+{
+	save_settings_for_close()
+	Try {
+		ColorSwatch.Destroy()
+	}
+	AuspHexWindow.Destroy()
+	ExitApp
+}
+
+
+; =========================================================
+;							HOTKEYS
+; =========================================================
+#HotIf WinExist("AuspHex - Color Viewer & Contrast Analyzer",)
+!LButton::
+!RButton::
+;Loads the color under the mouse cursor into the AuspHex window
+;Hold the ALt key and click the left mouse button once to load hex1, twice for hex2
+{
+	ListLines True
+	MouseGetPos(&MouseX, &MouseY) ;Saves the mouse cursor's coordinates
+	input_hex := PixelGetColor(MouseX, MouseY) ;Gets color of pixel under mouse
+
+	; Select Foreground with Alt+Left click
+	If InStr(A_ThisHotkey, "LButton") {
+		load_this_hex_into(input_hex, 1)
+	}
+	; Select Background with Alt+Right click
+	Else load_this_hex_into(input_hex, 2)
+}
+
+
+#HotIf slowOnAlt
+;Credit to mikeyww on AHK Forums:
+~LAlt::
+~RAlt:: {
+	Global orig_mouse_Speed
+	If not IsSet(orig_mouse_Speed) {
+		orig_mouse_Speed := getMouseSpeed()
+		setMouseSpeed(1)
+	}
+}
+
+~LAlt Up::
+~RAlt Up:: {
+	Global orig_mouse_Speed
+	Try {
+		setMouseSpeed(orig_mouse_Speed)
+	}
+	Catch {
+		setMouseSpeed(10)
+	}
+	orig_mouse_Speed := Unset
+}
+
+#HotIf
+
+AuspHex()
+; =========================================================
+;							TINKER
+; =========================================================
+
+UpdateColors() {
+	Global ;
+	ForeBackdrop := AuspHexWindow.Add("Text", Format("Section X{} Y+{} W{} r7.75", MarginX / 2, MarginY * 2, AuspWinWidth - MarginX - 4), "") ;For some reason, r7.75 equates to r4.5 for a GroupBox?
+	BackBackdrop := AuspHexWindow.Add("Text", Format("Section X{} Y+{} W{} r7.75", MarginX / 2, MarginY * 2, AuspWinWidth - MarginX - 4), "") ;For some reason, r7.75 equates to r4.5 for a GroupBox?
+
+
+	Local foreColor := Hex1.Value
+	Static foregroundFontControls := [
+		ForeGroupBox,
+		ForeText,
+		Hex1Label,
+		hex1,
+		RGB1Label,
+		Red1,
+		Green1,
+		Blue1
+	]
+
+	For ctrl in foregroundFontControls {
+		ctrl.Opt("C" foreColor)
+	}
+
+	Local contrasting_foreColor := contrastingFont(foreColor)
+	Static foregroundBackdropControls := [
+		ForeBackdrop,
+		ForeGroupBox,
+		hex1,
+		Red1,
+		Green1,
+		Blue1
+	]
+
+	For ctrl in foregroundBackdropControls {
+		ctrl.Opt("Background" contrasting_foreColor " Redraw")
+	}
+
+	Local backColor := Hex2.Value
+
+	Local contrasting_backColor := contrastingFont(backColor)
+	Static backgroundBackdropControls := [
+		BackBackdrop,
+		BackGroupBox,
+		hex2,
+		Red2,
+		Green2,
+		Blue2
+	]
+
+	For ctrl in backgroundBackdropControls {
+		ctrl.Opt("Background" backColor " Redraw")
+	}
+
+	Local contrasting_backColor := contrastingFont(backColor)
+	Static backgroundFontControls := [
+		ForeBackdrop,
+		ForeGroupBox,
+		hex2,
+		Red2,
+		Green2,
+		Blue2
+	]
+
+	For ctrl in backgroundFontControls {
+		ctrl.Opt("C" contrasting_backColor)
+	}
+}
+
+
+copy_color(GuiCtrlObj, Info := "") {
+	Switch GuiCtrlObj.Name {
+		Case "Hex1Copy":
+		{
+			A_Clipboard := "#" hex1.Value
+			Tip("#Hex value copied")
+		}
+		Case "Hex2Copy":
+		{
+			A_Clipboard := "#" hex2.Value
+			Tip("#Hex value copied")
+		}
+		Case "RGB1Copy":
+		{
+			A_Clipboard := "RGB(" Red1.Value ", " Green1.Value ", " Blue1.Value ")"
+			Tip("RGB() value copied")
+		}
+		Case "RGB2Copy":
+		{
+			A_Clipboard := "RGB(" Red2.Value ", " Green2.Value ", " Blue2.Value ")"
+			Tip("RGB() value copied")
+		}
+	}
+}
+
+
+launch_canvas(GuiCtrlObj, Info := "") {
+	;Image modified from https://commons.wikimedia.org/wiki/File:Full_Saturation_Spectrum.png
+	If WinExist("Color Sampling Canvas - AuspHex") {
+		;Remakes the canvas if it was already launched
+		Global canvas_window
+		canvas_window.Destroy()
+	}
+	Static spectrum_bmap := Create_Image(
+		"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"
+	)
+
+	canvas_window := Gui("+ToolWindow +Owner" AuspHexWindow.Hwnd, "Color Sampling Canvas - AuspHex")
+
+	Global AuspWinWidth
+	canvas_size := AuspWinWidth * 1.25
+	canvas_window.MarginX := canvas_window.MarginY := 0
+
+	spectrum_pic := canvas_window.Add("Pic", Format("W{} H{}", canvas_size, canvas_size), "HBITMAP:*" spectrum_bmap)
+
+	; Window launch -------------------------------------------
+	WinActive("A")
+	WinGetPos(&OutputX, &OutputY, , &OutputH)
+	Switch GuiCtrlObj.Name {
+		Case "color1_patch":
+		{
+			WinY := OutputY + OutputH * 0.3
+		}
+		Case "color2_patch":
+		{
+			WinY := OutputY + OutputH * 0.58
+		}
+		Default:
+		{
+			WinY := OutputY + OutputH - canvas_size * 1.65
+		}
+	}
+	canvas_window.Show(Format("X{} Y{} W{} H{}", OutputX, WinY, canvas_size, canvas_size))
+}
