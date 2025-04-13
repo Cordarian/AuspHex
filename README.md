@@ -22,4 +22,4 @@ AuspHex is a color contrast analyzer supporting WCAG AA and AAA standards.
 
 ## How does it work?
 
-This stand-alone tool is written in AutoHotkey v2. You can download and run the .exe file by itself, or view the whole code in the .ahk file, which can be run without the .exe using [AutoHokety](https://www.autohotkey.com/).
+This stand-alone tool is written in AutoHotkey v2. You can download and run the .exe file by itself, or view the whole code in the .ahk file, which can be run without the .exe using [AutoHotkey](https://www.autohotkey.com/).
