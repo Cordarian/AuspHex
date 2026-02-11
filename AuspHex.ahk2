@@ -930,7 +930,7 @@ save_settings_for_close() {
 StreamRead(INI_section, INI_key, defaultTo := False) {
 	; Reads the key's value from the given section of the data stream
 	stream_value := IniRead(A_ScriptFullPath ":Stream:$DATA", INI_section, INI_key, defaultTo)
-	If stream_value = defaultTo { ;PUBLICCOPY: Remove this If
+	If stream_value = defaultTo {
 		Global stream_fallback
 		stream_value := IniRead(stream_fallback, INI_section, INI_key, defaultTo)
 	}
@@ -944,7 +944,7 @@ StreamWrite(INI_section, INI_key, INI_value) {
 	Try {
 		IniWrite(INI_value, A_ScriptFullPath ":Stream:$DATA", INI_section, INI_key)
 	}
-	Catch { ;PUBLICCOPY: Remove this Catch
+	Catch {
 		Global stream_fallback
 		IniWrite(INI_value, stream_fallback, INI_section, INI_key)
 	}
