@@ -1,7 +1,7 @@
 # AuspHex
 AuspHex is a color contrast analyzer supporting WCAG AA and AAA standards.
 
-![AuspHex window](https://github.com/user-attachments/assets/da89cbaa-d2e0-4e7a-adba-0012079a9a30)
+![AuspHex window](https://github.com/Cordarian/AuspHex/blob/main/AuspHex%20demo.png)
 
 > Auspex: noun; A seer or oracle; augur.
 
@@ -10,17 +10,17 @@ AuspHex is a color contrast analyzer supporting WCAG AA and AAA standards.
 ## Features
 * **Color viewer**: Displays the color and hex code of the pixel under the mouse cursor
 * **Color contrast analyzer**: Evaluates color contrast according to WCAG 2.2 AA or AAA standards, displaying the results for both regular and large text, and non-text objects
-* **Contrast visualizer**: Pick a font and background color to see how clearly your text will show up
-* **Swap colors**: Quickly swap your font and background colors
+* **Contrast visualizer**: Pick foreground and background colors to see how clearly your text will show up
+* **Swap colors**: Quickly swap your foreground and background colors
 * **Copyable color codes**: Copy saved color hex and RGB codes from the display window
-* **Built-in color pallette**: Color swatches at the bottom of the window provide handy access to common colors; click to open a more extensive sampling canvas
-* **Precision sampling**: Hold the Alt key to slow mouse movement for more precise color sampling
+* **Built-in color pallette**: Color swatches at the bottom of the window provide handy access to common colors
+* **Precision sampling**: Hold the `Ctrl` key to slow mouse movement for more precise color sampling
 * **Adjustable window sizes**: Small, medium, and large window sizes for ease of use
 
 ## Controls
-* **Alt+Click** to save the current color in Hex1
-* **Alt+Double-Click** to save the current color in Hex2
-* **Hold Alt key** to slow mouse movement for more precise color picking
+* `Ctrl+Left Click` to save the current color in the foreground
+* `Ctrl+Right Click` to save the current color in the background
+* Hold `Ctrl` key to slow mouse movement for more precise color selection
 
 ## How does it work?
 
