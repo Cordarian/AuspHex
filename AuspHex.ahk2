@@ -1,5 +1,5 @@
 ; =========================================================
-;							DIRECTIVES
+;						DIRECTIVES
 ; =========================================================
 #Requires Autohotkey v2.0+
 #SingleInstance Force ; Prevents multiple versions of script running
@@ -7,7 +7,7 @@
 
 
 ; =========================================================
-;						GLOBAL VARIABLES
+;					GLOBAL VARIABLES
 ; =========================================================
 Global master_mouse_speed := getMouseSpeed()
 
@@ -28,7 +28,7 @@ Global stream_fallback := "Settings-" A_Username ".ini"
 
 
 ; =========================================================
-;							AUSPHEX GUI
+;						AUSPHEX GUI
 ; =========================================================
 AuspHex(A_ThisMenuItem := "", A_ThisMenuItemPos := "", A_ThisMenu := "")
 ; Creates AuspHex window and runs HexVision
@@ -986,7 +986,7 @@ Create_Image(B64, NewHandle := True) {
 
 
 ; =========================================================
-;							HOTKEYS
+;						HOTKEYS
 ; =========================================================
 #HotIf WinExist("AuspHex - Color Viewer & Contrast Analyzer",)
 ^LButton::
@@ -1034,7 +1034,7 @@ Create_Image(B64, NewHandle := True) {
 
 #HotIf
 ; =========================================================
-;						TRAY ICON BINARY
+;					TRAY ICON BINARY
 ; =========================================================
 {
 	; Icons generated using Image2Include v2 by iPhilip https://www.autohotkey.com/boards/viewtopic.php?style=1&t=119966
